@@ -190,13 +190,13 @@ Returns all rules for a specified datasource and includes default datasource.
 
 #### Namespaced Lookups
 
-* `/druid/coordinator/v1/lookups`
+* `/druid/coordinator/v1/namespaces`
 
 Returns all namespaces known to the cluster
 
-* `/druid/coordinator/v1/lookups/{lookup}`
+* `/druid/coordinator/v1/namespaces/{namespace}`
 
-Returns information on the specific lookup
+Returns information on the specific namespace
 
 ### POST
 

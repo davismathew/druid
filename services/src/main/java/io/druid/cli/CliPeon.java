@@ -72,7 +72,6 @@ import io.druid.segment.realtime.firehose.ServiceAnnouncingChatHandlerProvider;
 import io.druid.server.QueryResource;
 import io.druid.server.initialization.jetty.JettyServerInitializer;
 
-import io.druid.server.namespace.NamespacedExtractionModule;
 import org.eclipse.jetty.server.Server;
 
 import java.io.File;
@@ -197,8 +196,7 @@ public class CliPeon extends GuiceRunnable
 
           }
         },
-        new IndexingServiceFirehoseModule(),
-        new NamespacedExtractionModule()
+        new IndexingServiceFirehoseModule()
     );
   }
 

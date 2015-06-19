@@ -31,11 +31,9 @@ import com.metamx.common.logger.Logger;
 import io.druid.common.utils.JodaUtils;
 import io.druid.data.input.MapPopulator;
 import io.druid.query.extraction.namespace.ExtractionNamespaceFunctionFactory;
-import io.druid.query.extraction.namespace.JDBCExtractionNamespace;
 import io.druid.query.extraction.namespace.URIExtractionNamespace;
 import io.druid.segment.loading.DataSegmentPuller;
 import io.druid.segment.loading.URIDataPuller;
-import io.druid.server.namespace.cache.NamespaceExtractionCacheManager;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 
@@ -45,7 +43,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 
 /**
@@ -53,6 +50,7 @@ import java.util.regex.Pattern;
  */
 public class URIExtractionNamespaceFunctionFactory implements ExtractionNamespaceFunctionFactory<URIExtractionNamespace>
 {
+  private static final int DEFAULT_NUM_RETRIES = 3;
   private static final Logger log = new Logger(URIExtractionNamespaceFunctionFactory.class);
   private final Map<String, DataSegmentPuller> pullers;
 
@@ -171,7 +169,7 @@ public class URIExtractionNamespaceFunctionFactory implements ExtractionNamespac
                 }
               },
               puller.shouldRetryPredicate(),
-              3
+              DEFAULT_NUM_RETRIES
           );
         }
         catch (Exception e) {

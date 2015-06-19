@@ -22,6 +22,7 @@ package io.druid.query.extraction;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -36,19 +37,10 @@ import java.nio.ByteBuffer;
  * Namespaced extraction is a special case of DimExtractionFn where the actual extractor is pulled from a map of known implementations.
  * In the event that an unknown namespace is passed, a simple reflective function is returned instead.
  */
+@JsonTypeName("namespace")
 public class NamespacedExtractor implements LookupExtractor
 {
   private static final byte CACHE_TYPE_ID = 0x05;
-  private static final Function<String, String> NOOP_EXTRACTOR = new Function<String, String>()
-  {
-    @Nullable
-    @Override
-    public String apply(@Nullable String input)
-    {
-      // DimExtractionFn says do not return Empty strings
-      return Strings.isNullOrEmpty(input) ? null : input;
-    }
-  };
 
   private final String namespace;
   private final Function<String, String> extractionFunction;

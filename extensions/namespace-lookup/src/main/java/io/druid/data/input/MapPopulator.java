@@ -30,6 +30,8 @@ import java.util.Map;
 /**
  * Simple class that takes a `ByteSource` and uses a `Parser<K, V>` to populate a `Map<K, V>`
  * The `ByteSource` must be UTF-8 encoded
+ *
+ * If this is handy for other use cases pleaes move this class into a common module
  */
 public class MapPopulator<K, V>
 {

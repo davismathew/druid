@@ -40,18 +40,22 @@ import com.metamx.common.lifecycle.LifecycleStart;
 import com.metamx.common.lifecycle.LifecycleStop;
 import com.metamx.common.logger.Logger;
 import io.druid.curator.announcement.Announcer;
+import io.druid.guice.Jerseys;
+import io.druid.guice.JsonConfigProvider;
 import io.druid.guice.LazySingleton;
 import io.druid.guice.LifecycleModule;
 import io.druid.guice.ManageLifecycle;
 import io.druid.guice.PolyBind;
 import io.druid.guice.annotations.Json;
 import io.druid.initialization.DruidModule;
+import io.druid.query.extraction.NamespacedExtractor;
 import io.druid.query.extraction.namespace.ExtractionNamespace;
 import io.druid.query.extraction.namespace.ExtractionNamespaceFunctionFactory;
 import io.druid.query.extraction.namespace.JDBCExtractionNamespace;
 import io.druid.query.extraction.namespace.URIExtractionNamespace;
 import io.druid.server.coordination.DruidServerMetadata;
-import io.druid.server.http.AnnouncementSlaveResource;
+import io.druid.server.initialization.NamespaceLookupConfig;
+import io.druid.server.namespace.announcer.listener.AnnouncementListenerResource;
 import io.druid.server.initialization.ZkPathsConfig;
 import io.druid.server.namespace.cache.NamespaceExtractionCacheManager;
 import io.druid.server.namespace.cache.OffHeapNamespaceExtractionCacheManager;
@@ -70,7 +74,7 @@ import java.util.concurrent.ConcurrentMap;
 public class NamespacedExtractionModule implements DruidModule
 {
   private static final Logger log = new Logger(NamespacedExtractionModule.class);
-  private static final String TYPE_PREFIX = "druid.query.extraction.namespace.cache";
+  private static final String TYPE_PREFIX = "druid.query.extraction.namespace.cache.type";
   private final ConcurrentMap<String, Function<String, String>> fnCache = new ConcurrentHashMap<>();
 
   @Override
@@ -82,6 +86,7 @@ public class NamespacedExtractionModule implements DruidModule
           @Override
           public void setupModule(SetupContext context)
           {
+            context.registerSubtypes(NamespacedExtractor.class);
             context.registerSubtypes(ExtractionNamespace.class);
           }
         }
@@ -129,27 +134,31 @@ public class NamespacedExtractionModule implements DruidModule
         .to(URIExtractionNamespaceFunctionFactory.class)
         .in(LazySingleton.class);
 
-    AnnouncementSlaveResource
+    AnnouncementListenerResource
         .getPOSTHandlerMap(binder)
         .addBinding("namespace")
         .toProvider(NamespaceAnnouncementPostHandlerProvider.class)
         .in(LazySingleton.class);
-    AnnouncementSlaveResource
+    AnnouncementListenerResource
         .getDELETEHandlerMap(binder)
         .addBinding("namespace")
-        .toProvider(NamespeceAnnouncementDeleteHandlerPovider.class)
+        .toProvider(NamespaceAnnouncementDeleteHandlerProvider.class)
         .in(LazySingleton.class);
-    AnnouncementSlaveResource
+    AnnouncementListenerResource
         .getGETHandlerMap(binder)
         .addBinding("namespace")
         .toProvider(NamespaceAnnouncementGetHandlerProvider.class)
         .in(LazySingleton.class);
 
+    JsonConfigProvider.bind(binder, "druid.zk.paths", NamespaceLookupConfig.class);
+
     LifecycleModule.register(binder, NamespaceProcessorAnnouncer.class);
+
+    Jerseys.addResource(binder, AnnouncementListenerResource.class);
   }
 
   public static class NamespaceAnnouncementGetHandlerProvider
-      implements Provider<AnnouncementSlaveResource.AnnouncementIDHandler>
+      implements Provider<AnnouncementListenerResource.AnnouncementIDHandler>
   {
     @Inject
     public NamespaceAnnouncementGetHandlerProvider(
@@ -162,9 +171,9 @@ public class NamespacedExtractionModule implements DruidModule
     private final NamespaceExtractionCacheManager manager;
 
     @Override
-    public AnnouncementSlaveResource.AnnouncementIDHandler get()
+    public AnnouncementListenerResource.AnnouncementIDHandler get()
     {
-      return new AnnouncementSlaveResource.AnnouncementIDHandler()
+      return new AnnouncementListenerResource.AnnouncementIDHandler()
       {
         @Override
         public Response handle(String id)
@@ -179,13 +188,13 @@ public class NamespacedExtractionModule implements DruidModule
     }
   }
 
-  public static class NamespeceAnnouncementDeleteHandlerPovider
-      implements Provider<AnnouncementSlaveResource.AnnouncementIDHandler>
+  public static class NamespaceAnnouncementDeleteHandlerProvider
+      implements Provider<AnnouncementListenerResource.AnnouncementIDHandler>
   {
     private final NamespaceExtractionCacheManager manager;
 
     @Inject
-    public NamespeceAnnouncementDeleteHandlerPovider(
+    public NamespaceAnnouncementDeleteHandlerProvider(
         final NamespaceExtractionCacheManager manager
     )
     {
@@ -193,9 +202,9 @@ public class NamespacedExtractionModule implements DruidModule
     }
 
     @Override
-    public AnnouncementSlaveResource.AnnouncementIDHandler get()
+    public AnnouncementListenerResource.AnnouncementIDHandler get()
     {
-      return new AnnouncementSlaveResource.AnnouncementIDHandler()
+      return new AnnouncementListenerResource.AnnouncementIDHandler()
       {
         @Override
         public Response handle(String id)
@@ -211,7 +220,7 @@ public class NamespacedExtractionModule implements DruidModule
   }
 
   public static class NamespaceAnnouncementPostHandlerProvider
-      implements Provider<AnnouncementSlaveResource.AnnouncementPOSTHandler>
+      implements Provider<AnnouncementListenerResource.AnnouncementPOSTHandler>
   {
     private final NamespaceExtractionCacheManager manager;
 
@@ -224,9 +233,9 @@ public class NamespacedExtractionModule implements DruidModule
     }
 
     @Override
-    public AnnouncementSlaveResource.AnnouncementPOSTHandler get()
+    public AnnouncementListenerResource.AnnouncementPOSTHandler get()
     {
-      return new AnnouncementSlaveResource.AbstractAnnouncementPOSTHandler<ExtractionNamespace, Void>(
+      return new AnnouncementListenerResource.AbstractAnnouncementPOSTHandler<ExtractionNamespace, Void>(
           new TypeReference<ExtractionNamespace>()
           {
           }
@@ -290,13 +299,13 @@ public class NamespacedExtractionModule implements DruidModule
     @Inject
     public NamespaceProcessorAnnouncer(
         final Announcer announcer,
-        final ZkPathsConfig zkPathsConfig,
         final DruidServerMetadata node,
+        final NamespaceLookupConfig namespaceLookupConfig,
         final @Json ObjectMapper mapper
     )
     {
       this.announcer = announcer;
-      this.path = ZKPaths.makePath(zkPathsConfig.getNamespacePath(), node.getName());
+      this.path = ZKPaths.makePath(namespaceLookupConfig.getNamespacesPath(), node.getName());
       try {
         this.payload = mapper.writeValueAsBytes(node);
       }

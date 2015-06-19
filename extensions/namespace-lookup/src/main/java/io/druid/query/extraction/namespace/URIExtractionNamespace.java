@@ -174,8 +174,8 @@ public class URIExtractionNamespace implements ExtractionNamespace
 
     private DelegateParser(
         Parser<String, Object> delegate,
-        String key,
-        String value
+        @NotNull String key,
+        @NotNull String value
     )
     {
       this.delegate = delegate;
@@ -246,7 +246,6 @@ public class URIExtractionNamespace implements ExtractionNamespace
           Preconditions.checkNotNull(columns, "`columns` list required").size() > 1,
           "Must specify more than one column to have a key value pair"
       );
-      this.parser = new DelegateParser(new CSVParser(Optional.<String>absent(), columns), keyColumn, valueColumn);
 
       Preconditions.checkArgument(
           !(Strings.isNullOrEmpty(keyColumn) ^ Strings.isNullOrEmpty(valueColumn)),
@@ -256,17 +255,19 @@ public class URIExtractionNamespace implements ExtractionNamespace
       this.keyColumn = Strings.isNullOrEmpty(keyColumn) ? columns.get(0) : keyColumn;
       this.valueColumn = Strings.isNullOrEmpty(valueColumn) ? columns.get(1) : valueColumn;
       Preconditions.checkArgument(
-          columns.contains(keyColumn),
+          columns.contains(this.keyColumn),
           "Column [%s] not found int columns: %s",
-          keyColumn,
+          this.keyColumn,
           Arrays.toString(columns.toArray())
       );
       Preconditions.checkArgument(
-          columns.contains(valueColumn),
+          columns.contains(this.valueColumn),
           "Column [%s] not found int columns: %s",
-          valueColumn,
+          this.valueColumn,
           Arrays.toString(columns.toArray())
       );
+
+      this.parser = new DelegateParser(new CSVParser(Optional.<String>absent(), columns), this.keyColumn, this.valueColumn);
     }
 
     @JsonProperty
@@ -335,23 +336,24 @@ public class URIExtractionNamespace implements ExtractionNamespace
           "Must specify both `keyColumn` and `valueColumn` or neither `keyColumn` nor `valueColumn`"
       );
       delegate.setFieldNames(columns);
-      this.parser = new DelegateParser(delegate, keyColumn, valueColumn);
       this.columns = columns;
       this.delimiter = delimiter;
       this.keyColumn = Strings.isNullOrEmpty(keyColumn) ? columns.get(0) : keyColumn;
       this.valueColumn = Strings.isNullOrEmpty(valueColumn) ? columns.get(1) : valueColumn;
       Preconditions.checkArgument(
-          columns.contains(keyColumn),
+          columns.contains(this.keyColumn),
           "Column [%s] not found int columns: %s",
-          keyColumn,
+          this.keyColumn,
           Arrays.toString(columns.toArray())
       );
       Preconditions.checkArgument(
-          columns.contains(valueColumn),
+          columns.contains(this.valueColumn),
           "Column [%s] not found int columns: %s",
-          valueColumn,
+          this.valueColumn,
           Arrays.toString(columns.toArray())
       );
+
+      this.parser = new DelegateParser(delegate, this.keyColumn, this.valueColumn);
     }
 
     @JsonProperty

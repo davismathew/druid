@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package io.druid.server.http;
+package io.druid.server.namespace.announcer.listener;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,8 +66,8 @@ import java.util.Map;
  * This resource is expected to NOT block for new items, and is instead expected to make a best effort at returning
  * as quickly as possible.
  */
-@Path("/druid/announcement/v1")
-public class AnnouncementSlaveResource
+@Path("/druid/announcement/v1/listen")
+public class AnnouncementListenerResource
 {
 
   public static MapBinder<String, AnnouncementPOSTHandler> getPOSTHandlerMap(
@@ -206,7 +206,7 @@ public class AnnouncementSlaveResource
   private final Map<String, AnnouncementIDHandler> deleteHandler;
 
   @Inject
-  public AnnouncementSlaveResource(
+  public AnnouncementListenerResource(
       final @Json ObjectMapper jsonMapper,
       final @Smile ObjectMapper smileMapper,
       final @POSTHandler Map<String, AnnouncementPOSTHandler> postHandlers,

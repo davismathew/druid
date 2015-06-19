@@ -28,8 +28,7 @@ import javax.validation.constraints.NotNull;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(value = {
-    @JsonSubTypes.Type(name = "map", value = MapLookupExtractor.class),
-    @JsonSubTypes.Type(name = "namespace", value = NamespacedExtractor.class)
+    @JsonSubTypes.Type(name = "map", value = MapLookupExtractor.class)
 })
 public interface LookupExtractor
 {

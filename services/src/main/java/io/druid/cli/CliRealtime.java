@@ -24,7 +24,6 @@ import com.google.inject.name.Names;
 import com.metamx.common.logger.Logger;
 import io.airlift.command.Command;
 import io.druid.guice.RealtimeModule;
-import io.druid.server.namespace.NamespacedExtractionModule;
 
 import java.util.List;
 
@@ -48,15 +47,15 @@ public class CliRealtime extends ServerRunnable
   {
     return ImmutableList.<Module>of(
         new RealtimeModule(),
-        new Module() {
+        new Module()
+        {
           @Override
           public void configure(Binder binder)
           {
             binder.bindConstant().annotatedWith(Names.named("serviceName")).to("druid/realtime");
             binder.bindConstant().annotatedWith(Names.named("servicePort")).to(8084);
           }
-        },
-        new NamespacedExtractionModule()
+        }
     );
   }
 }
